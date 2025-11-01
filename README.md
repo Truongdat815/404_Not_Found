@@ -26,3 +26,4 @@ We are a passionate team of three FPT University students participating in the â
 
 Our mission is to build an intelligent AI-powered assistant that helps software teams refine and validate requirements efficiently. Using advanced natural language understanding and reasoning, our app automatically analyzes Software Requirement Specifications (SRS) and user stories to identify inconsistencies, ambiguities, and improvement opportunities â€” ensuring higher clarity, accuracy, and alignment across the development lifecycle.
 
+
