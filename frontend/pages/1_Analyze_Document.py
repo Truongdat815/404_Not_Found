@@ -26,14 +26,19 @@ def show():
     if "processing" not in st.session_state:
         st.session_state.processing = False
     
-    # Apply custom CSS for Claude-like styling
+    # Apply modern, beautiful CSS styling with strong overrides
     st.markdown("""
     <style>
+    /* Force override Streamlit defaults */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 50%, #f8f9fa 100%) !important;
+    }
+    
     /* Main container styling */
-    .main > div {
-        padding-top: 2rem;
-        max-width: 900px;
-        margin: 0 auto;
+    .main .block-container {
+        padding-top: 2rem !important;
+        max-width: 1400px !important;
+        margin: 0 auto !important;
     }
     
     /* Chat message styling */
@@ -41,26 +46,52 @@ def show():
         padding: 1rem;
         margin-bottom: 1rem;
         border-radius: 0.5rem;
+        animation: fadeIn 0.3s ease-in;
     }
     
-    /* User messages (right-aligned) */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* User messages (right-aligned) - Enhanced */
     .user-message {
-        background-color: #1e3a8a;
-        color: white;
-        margin-left: 20%;
-        border-radius: 1rem 1rem 0.25rem 1rem;
-        padding: 1rem;
-        text-align: left;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        margin-left: 20% !important;
+        margin-bottom: 1.5rem !important;
+        border-radius: 1.5rem 1.5rem 0.25rem 1.5rem !important;
+        padding: 1.5rem 2rem !important;
+        text-align: left !important;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: none !important;
     }
     
-    /* Assistant messages (left-aligned) */
+    .user-message:hover {
+        transform: translateY(-4px) !important;
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.45) !important;
+    }
+    
+    /* Assistant messages (left-aligned) - Enhanced */
     .assistant-message {
-        background-color: #f8f9fa;
-        color: #333;
-        margin-right: 20%;
-        border-radius: 1rem 1rem 1rem 0.25rem;
-        padding: 1rem;
-        border-left: 3px solid #4f46e5;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+        color: #1f2937 !important;
+        margin-right: 20% !important;
+        margin-bottom: 1.5rem !important;
+        border-radius: 1.5rem 1.5rem 1.5rem 0.25rem !important;
+        padding: 1.5rem 2rem !important;
+        border-left: 5px solid #667eea !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border-top: 1px solid rgba(102, 126, 234, 0.1) !important;
+        border-right: 1px solid rgba(102, 126, 234, 0.1) !important;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    .assistant-message:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+        transform: translateX(4px) !important;
     }
     
     /* Chat input styling */
@@ -70,30 +101,51 @@ def show():
         font-size: 1rem;
     }
     
-    /* File upload button styling */
+    /* File upload button styling - Enhanced */
     .stFileUploader > div {
-        border: 2px dashed #4f46e5;
-        border-radius: 1rem;
-        padding: 2rem;
-        background-color: #f8f9fa;
-        transition: all 0.3s ease;
+        border: 3px dashed #667eea !important;
+        border-radius: 1.5rem !important;
+        padding: 3rem 2.5rem !important;
+        background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%) !important;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15) !important;
     }
     
     .stFileUploader > div:hover {
-        border-color: #6366f1;
-        background-color: #f0f0ff;
+        border-color: #764ba2 !important;
+        background: linear-gradient(135deg, #f0f2ff 0%, #f8f9ff 100%) !important;
+        transform: translateY(-4px) scale(1.01) !important;
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.3) !important;
     }
     
-    /* Button styling */
+    /* Button styling - Modern gradient buttons - Enhanced */
     .stButton > button {
-        border-radius: 0.5rem;
-        font-weight: 600;
-        transition: all 0.2s ease;
+        border-radius: 1rem !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        padding: 0.75rem 2rem !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35) !important;
+        color: white !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-4px) scale(1.05) !important;
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5) !important;
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+    }
+    
+    .stButton > button:active {
+        transform: translateY(-2px) scale(1.02) !important;
+    }
+    
+    /* Primary button special styling */
+    .stButton > button[data-baseweb="button"][kind="primary"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     }
     
     /* Results formatting */
@@ -104,53 +156,77 @@ def show():
         margin-top: 1rem;
     }
     
-    /* Column styling for 3-column layout */
+    /* Column styling for 3-column layout - Modern cards - Enhanced */
     .analysis-column {
-        background-color: #ffffff;
-        border-radius: 0.75rem;
-        padding: 1.25rem;
-        margin: 0.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        min-height: 400px;
-        height: 100%;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+        border-radius: 1.25rem !important;
+        padding: 2rem !important;
+        margin: 1rem !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+        min-height: 500px !important;
+        height: 100% !important;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 1px solid rgba(0,0,0,0.08) !important;
+        overflow-y: auto !important;
+        max-height: 600px !important;
+    }
+    
+    .analysis-column:hover {
+        transform: translateY(-6px) scale(1.02) !important;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.18) !important;
     }
     
     .conflict-column {
-        border-top: 4px solid #ef4444;
+        border-top: 5px solid #ef4444;
+        background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
     }
     
     .ambiguity-column {
-        border-top: 4px solid #f59e0b;
+        border-top: 5px solid #f59e0b;
+        background: linear-gradient(135deg, #fffbf0 0%, #ffffff 100%);
     }
     
     .suggestion-column {
-        border-top: 4px solid #10b981;
+        border-top: 5px solid #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
     }
     
     .column-header {
-        font-size: 1.25rem;
+        font-size: 1.35rem;
         font-weight: 700;
-        margin-bottom: 1rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.875rem;
+        border-bottom: 2px solid rgba(0,0,0,0.08);
         color: #1f2937;
+        letter-spacing: -0.02em;
     }
     
     .conflict-item, .ambiguity-item, .suggestion-item {
-        background-color: #f9fafb;
-        border-left: 4px solid #ef4444;
-        padding: 1rem;
-        margin: 0.75rem 0;
-        border-radius: 0.5rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border-left: 5px solid #ef4444;
+        padding: 1.25rem;
+        margin: 1rem 0;
+        border-radius: 0.75rem;
         color: #1f2937;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: all 0.3s ease;
+        border-top: 1px solid rgba(0,0,0,0.05);
+        border-right: 1px solid rgba(0,0,0,0.05);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .conflict-item:hover, .ambiguity-item:hover, .suggestion-item:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     .conflict-item strong, .ambiguity-item strong, .suggestion-item strong {
         color: #111827;
         font-weight: 600;
+        display: inline-block;
+        margin-top: 0.5rem;
     }
     
     .ambiguity-item {
@@ -164,13 +240,152 @@ def show():
     .empty-state {
         color: #6b7280;
         text-align: center;
-        padding: 2rem;
+        padding: 3rem 2rem;
         font-style: italic;
+        font-size: 1rem;
+        background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+        border-radius: 0.75rem;
+        border: 2px dashed #d1d5db;
+    }
+    
+    /* Metrics styling */
+    [data-testid="stMetricValue"] {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        color: #667eea !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #6b7280 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    /* Improve scrollbar */
+    .analysis-column::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .analysis-column::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .analysis-column::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    
+    .analysis-column::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # Chat history display
+    # ============================================
+    # FILE UPLOAD SECTION - MOVED TO TOP (VERY VISIBLE)
+    # ============================================
+    st.markdown("---")
+    
+    # Big, visible section header
+    st.markdown("## 📁 UPLOAD FILE ĐỂ PHÂN TÍCH")
+    st.markdown("<p style='font-size: 1.1rem; color: #667eea; font-weight: 600; margin-bottom: 1.5rem;'>Chọn file .txt hoặc .docx chứa SRS/User Stories để AI phân tích</p>", unsafe_allow_html=True)
+    
+    # Very visible upload box
+    st.markdown("""
+    <div style='
+        background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        padding: 2.5rem;
+        border-radius: 1.25rem;
+        margin-bottom: 2rem;
+        border: 3px dashed #667eea;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    '>
+    """, unsafe_allow_html=True)
+    
+    # File uploader - MUST BE VISIBLE
+    uploaded_file = st.file_uploader(
+        "📎 CHỌN FILE .TXT HOẶC .DOCX",
+        type=['txt', 'docx'],
+        help="Kéo thả file vào đây hoặc click để chọn file",
+        label_visibility="visible",
+        key="file_uploader_main"
+    )
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Show file info and analyze button
+    if uploaded_file is not None:
+        file_details = {
+            "Filename": uploaded_file.name,
+            "FileType": uploaded_file.type,
+            "FileSize": f"{uploaded_file.size / 1024:.2f} KB"
+        }
+        
+        # File info display
+        st.success(f"✅ **File đã chọn:** {uploaded_file.name} ({file_details['FileSize']})")
+        
+        # Big analyze button - VERY VISIBLE
+        st.markdown("<br>", unsafe_allow_html=True)
+        analyze_button = st.button(
+            "🔍 PHÂN TÍCH FILE NÀY",
+            type="primary",
+            use_container_width=True,
+            help="Click để AI phân tích file của bạn",
+            key="analyze_file_button_main"
+        )
+        
+        # Analyze file when button is clicked
+        if analyze_button:
+            st.session_state.messages.append({
+                "role": "user",
+                "content": f"📁 Uploaded file: **{uploaded_file.name}** ({file_details['FileSize']})",
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            st.session_state.processing = True
+            try:
+                with st.spinner("🤖 Đang phân tích file... Vui lòng đợi 10-30 giây"):
+                    response = app.analyze_file(uploaded_file)
+                    
+                    if response and "error" not in response:
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": response,
+                            "timestamp": datetime.now().isoformat(),
+                            "function_used": "analyze_requirements"
+                        })
+                        app.current_document = response
+                        
+                        conflicts_count = len(response.get('conflicts', []))
+                        ambiguities_count = len(response.get('ambiguities', []))
+                        suggestions_count = len(response.get('suggestions', []))
+                        st.success(
+                            f"✅ **Phân tích hoàn tất!** "
+                            f"Tìm thấy {conflicts_count} xung đột, "
+                            f"{ambiguities_count} mơ hồ, "
+                            f"{suggestions_count} đề xuất"
+                        )
+                        st.rerun()
+                    else:
+                        error_msg = response.get("error", "Unknown error") if response else "Failed to analyze file"
+                        st.error(f"❌ Lỗi: {error_msg}")
+            except Exception as e:
+                st.error(f"❌ Lỗi khi phân tích file: {str(e)}")
+            finally:
+                st.session_state.processing = False
+    else:
+        st.info("👆 **Chọn file ở trên** để upload và phân tích document SRS/User Stories của bạn (.txt hoặc .docx)")
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # ============================================
+    # CHAT HISTORY DISPLAY
+    # ============================================
+    st.markdown("### 💬 Lịch sử chat")
     chat_container = st.container()
     
     with chat_container:
@@ -202,109 +417,12 @@ def show():
                     </div>
                     """, unsafe_allow_html=True)
     
-    # Chat input at the bottom
-    st.markdown("---")
-    
-    # File upload section with prominent button
-    st.markdown("### 📁 Upload & Analyze File")
-    
-    # Create two columns for better layout
-    col_upload, col_info = st.columns([2, 1])
-    
-    with col_upload:
-        uploaded_file = st.file_uploader(
-            "Choose a .txt or .docx file",
-            type=['txt', 'docx'],
-            help="Upload a .txt or .docx file containing SRS/User Stories",
-            label_visibility="visible"
-        )
-    
-    # Show upload button if file is selected
-    if uploaded_file is not None:
-        # Show file info
-        file_details = {
-            "Filename": uploaded_file.name,
-            "FileType": uploaded_file.type,
-            "FileSize": f"{uploaded_file.size / 1024:.2f} KB"
-        }
-        
-        with col_info:
-            st.markdown("<br>", unsafe_allow_html=True)  # Spacing
-            st.info(f"📄 **{uploaded_file.name}**\n\nSize: {file_details['FileSize']}")
-        
-        # Large prominent analyze button
-        st.markdown("<br>", unsafe_allow_html=True)
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-        with col_btn2:
-            analyze_button = st.button(
-                "🔍 Analyze File",
-                type="primary",
-                use_container_width=True,
-                help="Click to analyze the uploaded file"
-            )
-        
-        # Analyze file when button is clicked
-        if analyze_button:
-            # Add user message about file upload
-            st.session_state.messages.append({
-                "role": "user",
-                "content": f"📁 Uploaded file: **{uploaded_file.name}** ({file_details['FileSize']})",
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            st.session_state.processing = True
-            try:
-                with st.spinner("🤖 Analyzing file... This may take 10-30 seconds"):
-                    # Analyze file via backend API
-                    response = app.analyze_file(uploaded_file)
-                    
-                    if response and "error" not in response:
-                        # Add successful response
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": response,
-                            "timestamp": datetime.now().isoformat(),
-                            "function_used": "analyze_requirements"
-                        })
-                        app.current_document = response
-                        
-                        # Success message with stats
-                        conflicts_count = len(response.get('conflicts', []))
-                        ambiguities_count = len(response.get('ambiguities', []))
-                        suggestions_count = len(response.get('suggestions', []))
-                        st.success(
-                            f"✅ **Analysis Complete!** "
-                            f"Found {conflicts_count} conflict(s), "
-                            f"{ambiguities_count} ambiguity(ies), "
-                            f"{suggestions_count} suggestion(s)"
-                        )
-                    else:
-                        # Add error response
-                        error_msg = response.get("error", "Unknown error") if response else "Failed to analyze file"
-                        st.session_state.messages.append({
-                            "role": "assistant",
-                            "content": f"❌ Error: {error_msg}",
-                            "timestamp": datetime.now().isoformat(),
-                            "function_used": "error"
-                        })
-                        st.error(f"❌ Error: {error_msg}")
-            except Exception as e:
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"❌ Error: {str(e)}",
-                    "timestamp": datetime.now().isoformat(),
-                    "function_used": "error"
-                })
-                st.error(f"❌ Error analyzing file: {str(e)}")
-            finally:
-                st.session_state.processing = False
-                st.rerun()
-    else:
-        # Show placeholder when no file is uploaded
-        st.info("👆 **Select a file above** to upload and analyze your SRS/User Stories document (.txt or .docx)")
-    
+    # ============================================
+    # TEXT INPUT SECTION AT BOTTOM
+    # ============================================
     st.markdown("---")
     st.markdown("### 💬 Or paste text below")
+    st.markdown("<p style='color: #6b7280; margin-bottom: 1rem;'>Alternatively, paste your requirements text directly into the input field</p>", unsafe_allow_html=True)
     
     # Input section with centered styling
     col1, col2, col3 = st.columns([1, 8, 1])
@@ -412,19 +530,21 @@ def display_analysis_results(results: dict) -> None:
     ambiguities = results.get("ambiguities", [])
     suggestions = results.get("suggestions", [])
     
-    # Display summary stats
-    st.markdown("---")
+    # Display summary stats with icons
+    st.markdown("<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 1rem; margin: 1.5rem 0;'>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: white; margin-bottom: 1.5rem; text-align: center; font-weight: 700;'>📊 Analysis Summary</h3>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Conflicts", len(conflicts), delta_color="inverse")
+        st.metric("🧩 Conflicts", len(conflicts), delta_color="inverse")
     with col2:
-        st.metric("Ambiguities", len(ambiguities), delta_color="inverse")
+        st.metric("❓ Ambiguities", len(ambiguities), delta_color="inverse")
     with col3:
-        st.metric("Suggestions", len(suggestions), delta_color="normal")
+        st.metric("💡 Suggestions", len(suggestions), delta_color="normal")
     with col4:
-        st.metric("Total Issues", len(conflicts) + len(ambiguities) + len(suggestions))
+        st.metric("📋 Total Issues", len(conflicts) + len(ambiguities) + len(suggestions))
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # 3-column layout for results
     col_conflicts, col_ambiguities, col_suggestions = st.columns(3)
