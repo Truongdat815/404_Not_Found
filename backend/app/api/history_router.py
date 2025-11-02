@@ -57,15 +57,20 @@ async def get_history(
     - **offset**: Số records bỏ qua (pagination)
     - **order_by**: Sắp xếp ("asc" hoặc "desc")
     """
-    total = get_analysis_count(db)
-    items = get_analysis_history(db, limit=limit, offset=offset, order_by=order_by)
-    
-    return HistoryListResponse(
-        total=total,
-        limit=limit,
-        offset=offset,
-        items=[AnalysisHistoryResponse(**item.to_dict()) for item in items]
-    )
+    try:
+        total = get_analysis_count(db)
+        items = get_analysis_history(db, limit=limit, offset=offset, order_by=order_by)
+        
+        return HistoryListResponse(
+            total=total,
+            limit=limit,
+            offset=offset,
+            items=[AnalysisHistoryResponse(**item.to_dict()) for item in items]
+        )
+    except Exception as e:
+        from app.utils.logger import logger
+        logger.error(f"Error in get_history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve history: {str(e)}")
 
 
 @router.get("/{analysis_id}", response_model=AnalysisHistoryResponse)
@@ -76,11 +81,18 @@ async def get_history_by_id(
     """
     Lấy kết quả phân tích theo ID
     """
-    analysis = get_analysis_by_id(db, analysis_id)
-    if not analysis:
-        raise HTTPException(status_code=404, detail=f"Analysis with ID {analysis_id} not found")
-    
-    return AnalysisHistoryResponse(**analysis.to_dict())
+    try:
+        analysis = get_analysis_by_id(db, analysis_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail=f"Analysis with ID {analysis_id} not found")
+        
+        return AnalysisHistoryResponse(**analysis.to_dict())
+    except HTTPException:
+        raise
+    except Exception as e:
+        from app.utils.logger import logger
+        logger.error(f"Error in get_history_by_id: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve analysis: {str(e)}")
 
 
 @router.delete("/{analysis_id}")
@@ -91,11 +103,20 @@ async def delete_history(
     """
     Xóa kết quả phân tích
     """
-    success = delete_analysis(db, analysis_id)
-    if not success:
-        raise HTTPException(status_code=404, detail=f"Analysis with ID {analysis_id} not found")
-    
-    return {"message": f"Analysis {analysis_id} deleted successfully"}
+    try:
+        success = delete_analysis(db, analysis_id)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Analysis with ID {analysis_id} not found")
+        
+        from app.utils.logger import logger
+        logger.info(f"Analysis {analysis_id} deleted successfully")
+        return {"message": f"Analysis {analysis_id} deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        from app.utils.logger import logger
+        logger.error(f"Error in delete_history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete analysis: {str(e)}")
 
 
 @router.get("/search", response_model=List[AnalysisHistoryResponse])
@@ -107,6 +128,11 @@ async def search_history(
     """
     Tìm kiếm trong lịch sử phân tích
     """
-    results = search_analysis(db, search_text=q, limit=limit)
-    return [AnalysisHistoryResponse(**item.to_dict()) for item in results]
+    try:
+        results = search_analysis(db, search_text=q, limit=limit)
+        return [AnalysisHistoryResponse(**item.to_dict()) for item in results]
+    except Exception as e:
+        from app.utils.logger import logger
+        logger.error(f"Error in search_history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
