@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-\.env
-__pycache__/
-*.pyc
-=======
 # Python
 __pycache__/
 *.py[cod]
@@ -58,7 +53,7 @@ build/
 out/
 
 # Frontend (React - removed, using Streamlit now)
-frontend/
+
 
 # Testing
 .coverage
@@ -75,5 +70,4 @@ htmlcov/
 Thumbs.db
 .DS_Store
 
->>>>>>> upstream/thaobackend
 backend/.env
