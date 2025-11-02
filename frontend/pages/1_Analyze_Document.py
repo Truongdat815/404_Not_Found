@@ -131,6 +131,73 @@ def show():
     # Chat input at the bottom
     st.markdown("---")
     
+    # File upload section
+    st.markdown("### 📁 Upload File (.txt or .docx)")
+    uploaded_file = st.file_uploader(
+        "Choose a file to analyze",
+        type=['txt', 'docx'],
+        help="Upload a .txt or .docx file containing SRS/User Stories",
+        label_visibility="collapsed"
+    )
+    
+    if uploaded_file is not None:
+        # Show file info
+        file_details = {
+            "Filename": uploaded_file.name,
+            "FileType": uploaded_file.type,
+            "FileSize": f"{uploaded_file.size / 1024:.2f} KB"
+        }
+        st.info(f"📄 **{uploaded_file.name}** ({file_details['FileSize']}) ready to analyze")
+        
+        # Analyze file button
+        if st.button("🔍 Analyze File", type="primary", use_container_width=True):
+            st.session_state.messages.append({
+                "role": "user",
+                "content": f"Uploaded file: {uploaded_file.name}",
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            st.session_state.processing = True
+            try:
+                with st.spinner("🤖 Analyzing file..."):
+                    # Analyze file via backend API
+                    response = app.analyze_file(uploaded_file)
+                    
+                    if response and "error" not in response:
+                        # Add successful response
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": response,
+                            "timestamp": datetime.now().isoformat(),
+                            "function_used": "analyze_requirements"
+                        })
+                        app.current_document = response
+                        st.success(f"✅ Analysis complete! Found {len(response.get('conflicts', []))} conflicts, {len(response.get('ambiguities', []))} ambiguities, {len(response.get('suggestions', []))} suggestions")
+                    else:
+                        # Add error response
+                        error_msg = response.get("error", "Unknown error") if response else "Failed to analyze file"
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": f"❌ Error: {error_msg}",
+                            "timestamp": datetime.now().isoformat(),
+                            "function_used": "error"
+                        })
+                        st.error(f"Error: {error_msg}")
+            except Exception as e:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"❌ Error: {str(e)}",
+                    "timestamp": datetime.now().isoformat(),
+                    "function_used": "error"
+                })
+                st.error(f"Error analyzing file: {str(e)}")
+            finally:
+                st.session_state.processing = False
+                st.rerun()
+    
+    st.markdown("---")
+    st.markdown("### 💬 Or paste text below")
+    
     # Input section with centered styling
     col1, col2, col3 = st.columns([1, 8, 1])
     with col2:

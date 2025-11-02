@@ -409,6 +409,83 @@ class Agent:
             print(f"Error fetching history: {e}")
             return []
     
+    def analyze_file(self, uploaded_file) -> Dict[str, Any]:
+        """
+        Analyze requirements from uploaded file via HTTP API
+        
+        Args:
+            uploaded_file: Streamlit UploadedFile object
+            
+        Returns:
+            Analysis results with conflicts, ambiguities, suggestions
+        """
+        try:
+            if self.backend_available:
+                # Prepare file for upload
+                files = {
+                    'file': (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)
+                }
+                data = {
+                    'model': 'gemini-2.5-flash'
+                }
+                
+                # Call backend file upload API
+                response = requests.post(
+                    f"{self.api_base_url}/api/analyze/file",
+                    files=files,
+                    data=data,
+                    timeout=120  # 2 minutes for file processing
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    # Store analysis_id for later use
+                    self.current_analysis_id = result.get("analysis_id")
+                    self.current_document = result
+                    result["function_used"] = "analyze_requirements"
+                    return result
+                else:
+                    error_msg = response.json().get("detail", "Unknown error")
+                    return {
+                        "conflicts": [],
+                        "ambiguities": [],
+                        "suggestions": [],
+                        "error": f"API Error ({response.status_code}): {error_msg}",
+                        "function_used": "error"
+                    }
+            else:
+                return {
+                    "conflicts": [],
+                    "ambiguities": [],
+                    "suggestions": [],
+                    "error": f"Cannot connect to backend API at {self.api_base_url}",
+                    "function_used": "error"
+                }
+        except requests.exceptions.Timeout:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": "Request timeout. File is too large or analysis is taking too long.",
+                "function_used": "error"
+            }
+        except requests.exceptions.ConnectionError:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": f"Cannot connect to backend API at {self.api_base_url}. Please ensure the backend server is running.",
+                "function_used": "error"
+            }
+        except Exception as e:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": f"Error: {str(e)}",
+                "function_used": "error"
+            }
+    
     def export_analysis(self, analysis_id: int, format: str = "json") -> Optional[bytes]:
         """
         Export analysis result from backend
