@@ -9,13 +9,15 @@ pip install -r requirements.txt
 
 ## Running the Application
 
+Từ thư mục root của project:
 ```bash
-python -m streamlit run app.py
+python -m streamlit run frontend/app.py
 ```
 
-Hoặc nếu `streamlit` đã có trong PATH:
+Hoặc di chuyển vào thư mục frontend:
 ```bash
-streamlit run app.py
+cd frontend
+python -m streamlit run app.py
 ```
 
 The app will open in your browser at `http://localhost:8501`
@@ -24,11 +26,12 @@ The app will open in your browser at `http://localhost:8501`
 
 ```
 .
-├── app.py                      # Main Streamlit application
-├── pages/
-│   └── 1_Analyze_Document.py   # Document analysis page
-├── core/
-│   └── agent.py                # Agent module (app.invoke())
+├── frontend/
+│   ├── app.py                  # Main Streamlit application
+│   ├── pages/
+│   │   └── 1_Analyze_Document.py  # Document analysis page
+│   └── core/
+│       └── agent.py            # Agent module (app.invoke())
 ├── requirements.txt            # Python dependencies
 └── backend/                    # Backend API (if needed)
 ```
