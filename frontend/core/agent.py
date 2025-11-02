@@ -169,14 +169,18 @@ class Agent:
         """
         try:
             if self.backend_available:
-                # Call backend HTTP API
+                # Estimate processing time based on text length
+                # Fast method: ~30-60 seconds for most cases
+                estimated_seconds = min(max(len(text) // 50, 30), 90)  # 30-90 seconds
+                
+                # Call backend HTTP API with optimized timeout
                 response = requests.post(
                     f"{self.api_base_url}/api/analyze",
                     json={
                         "text": text,
                         "model": "gemini-2.5-flash"
                     },
-                    timeout=120  # 2 minutes for AI processing
+                    timeout=90  # Optimized: 90 seconds (fast method should complete in 30-60s)
                 )
                 
                 if response.status_code == 200:
@@ -206,7 +210,7 @@ class Agent:
                 "conflicts": [],
                 "ambiguities": [],
                 "suggestions": [],
-                "error": "Request timeout. The analysis is taking too long. Please try with a shorter text.",
+                "error": "⏱️ Timeout: Phân tích mất quá 90 giây. Vui lòng thử với text ngắn hơn hoặc chia nhỏ document.",
                 "function_used": "error"
             }
         except requests.exceptions.ConnectionError:
@@ -419,62 +423,23 @@ class Agent:
         Returns:
             Analysis results with conflicts, ambiguities, suggestions
         """
+        # First check if backend is available
         try:
-            if self.backend_available:
-                # Prepare file for upload
-                files = {
-                    'file': (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)
-                }
-                data = {
-                    'model': 'gemini-2.5-flash'
-                }
-                
-                # Call backend file upload API
-                response = requests.post(
-                    f"{self.api_base_url}/api/analyze/file",
-                    files=files,
-                    data=data,
-                    timeout=120  # 2 minutes for file processing
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    # Store analysis_id for later use
-                    self.current_analysis_id = result.get("analysis_id")
-                    self.current_document = result
-                    result["function_used"] = "analyze_requirements"
-                    return result
-                else:
-                    error_msg = response.json().get("detail", "Unknown error")
-                    return {
-                        "conflicts": [],
-                        "ambiguities": [],
-                        "suggestions": [],
-                        "error": f"API Error ({response.status_code}): {error_msg}",
-                        "function_used": "error"
-                    }
-            else:
+            health_check = requests.get(f"{self.api_base_url}/health", timeout=3)
+            if health_check.status_code != 200:
                 return {
                     "conflicts": [],
                     "ambiguities": [],
                     "suggestions": [],
-                    "error": f"Cannot connect to backend API at {self.api_base_url}",
+                    "error": f"Backend không khả dụng (status: {health_check.status_code}). Vui lòng kiểm tra backend server.",
                     "function_used": "error"
                 }
-        except requests.exceptions.Timeout:
-            return {
-                "conflicts": [],
-                "ambiguities": [],
-                "suggestions": [],
-                "error": "Request timeout. File is too large or analysis is taking too long.",
-                "function_used": "error"
-            }
         except requests.exceptions.ConnectionError:
             return {
                 "conflicts": [],
                 "ambiguities": [],
                 "suggestions": [],
-                "error": f"Cannot connect to backend API at {self.api_base_url}. Please ensure the backend server is running.",
+                "error": f"❌ Không thể kết nối đến backend tại {self.api_base_url}. Vui lòng đảm bảo backend đang chạy trên port 8000.",
                 "function_used": "error"
             }
         except Exception as e:
@@ -482,7 +447,78 @@ class Agent:
                 "conflicts": [],
                 "ambiguities": [],
                 "suggestions": [],
-                "error": f"Error: {str(e)}",
+                "error": f"❌ Lỗi kiểm tra backend: {str(e)}",
+                "function_used": "error"
+            }
+        
+        try:
+            # Prepare file for upload
+            files = {
+                'file': (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type or 'text/plain')
+            }
+            data = {
+                'model': 'gemini-2.5-flash'
+            }
+            
+            # Call backend file upload API with optimized timeout
+            # Fast method should complete in 60-90 seconds for most files
+            response = requests.post(
+                f"{self.api_base_url}/api/analyze/file",
+                files=files,
+                data=data,
+                timeout=120  # Optimized: 120 seconds (fast method should complete in 60-90s)
+            )
+            
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    # Store analysis_id for later use
+                    self.current_analysis_id = result.get("analysis_id")
+                    self.current_document = result
+                    result["function_used"] = "analyze_requirements"
+                    return result
+                except ValueError as e:
+                    return {
+                        "conflicts": [],
+                        "ambiguities": [],
+                        "suggestions": [],
+                        "error": f"❌ Lỗi parse response từ backend: {str(e)}. Response: {response.text[:200]}",
+                        "function_used": "error"
+                    }
+            else:
+                try:
+                    error_detail = response.json().get("detail", response.text[:200])
+                except:
+                    error_detail = response.text[:200] if response.text else "Unknown error"
+                return {
+                    "conflicts": [],
+                    "ambiguities": [],
+                    "suggestions": [],
+                    "error": f"❌ API Error ({response.status_code}): {error_detail}",
+                    "function_used": "error"
+                }
+        except requests.exceptions.Timeout:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": "⏱️ Timeout: Phân tích file mất quá 120 giây. File có thể quá lớn (>5000 từ). Vui lòng thử với file nhỏ hơn.",
+                "function_used": "error"
+            }
+        except requests.exceptions.ConnectionError:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": f"❌ Mất kết nối đến backend tại {self.api_base_url}. Vui lòng kiểm tra backend server.",
+                "function_used": "error"
+            }
+        except Exception as e:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": f"❌ Lỗi: {str(e)}",
                 "function_used": "error"
             }
     
