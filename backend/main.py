@@ -3,9 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 from app.api.router import router
+from app.api.history_router import router as history_router
+from app.api.export_router import router as export_router
+from app.database.db import init_db
 
 # Load environment variables
 load_dotenv()
+
+# Initialize database
+try:
+    init_db()
+except Exception as e:
+    print(f"⚠️  Database initialization warning: {str(e)}")
+    print("   Server will continue, but history features may not work")
 
 app = FastAPI(
     title="AI Requirements Engineering API",
@@ -22,8 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API router
+# Include API routers
 app.include_router(router)
+app.include_router(history_router)
+app.include_router(export_router)
 
 @app.get("/")
 async def root():
