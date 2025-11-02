@@ -1,1 +1,4 @@
-from backend.app.main import main\n\nif __name__ == '__main__':\n    main()
+from backend.app.main import main
+
+if __name__ == '__main__':
+    main()
