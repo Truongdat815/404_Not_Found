@@ -70,6 +70,32 @@ def show():
         font-size: 1rem;
     }
     
+    /* File upload button styling */
+    .stFileUploader > div {
+        border: 2px dashed #4f46e5;
+        border-radius: 1rem;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .stFileUploader > div:hover {
+        border-color: #6366f1;
+        background-color: #f0f0ff;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        border-radius: 0.5rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
     /* Results formatting */
     .analysis-results {
         background-color: #f0f0f0;
@@ -78,12 +104,53 @@ def show():
         margin-top: 1rem;
     }
     
+    /* Column styling for 3-column layout */
+    .analysis-column {
+        background-color: #ffffff;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        margin: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        min-height: 400px;
+        height: 100%;
+    }
+    
+    .conflict-column {
+        border-top: 4px solid #ef4444;
+    }
+    
+    .ambiguity-column {
+        border-top: 4px solid #f59e0b;
+    }
+    
+    .suggestion-column {
+        border-top: 4px solid #10b981;
+    }
+    
+    .column-header {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e5e7eb;
+        color: #1f2937;
+    }
+    
     .conflict-item, .ambiguity-item, .suggestion-item {
-        background-color: white;
-        border-left: 3px solid #ef4444;
-        padding: 0.75rem;
-        margin: 0.5rem 0;
-        border-radius: 0.25rem;
+        background-color: #f9fafb;
+        border-left: 4px solid #ef4444;
+        padding: 1rem;
+        margin: 0.75rem 0;
+        border-radius: 0.5rem;
+        color: #1f2937;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .conflict-item strong, .ambiguity-item strong, .suggestion-item strong {
+        color: #111827;
+        font-weight: 600;
     }
     
     .ambiguity-item {
@@ -92,6 +159,13 @@ def show():
     
     .suggestion-item {
         border-left-color: #10b981;
+    }
+    
+    .empty-state {
+        color: #6b7280;
+        text-align: center;
+        padding: 2rem;
+        font-style: italic;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -131,15 +205,21 @@ def show():
     # Chat input at the bottom
     st.markdown("---")
     
-    # File upload section
-    st.markdown("### 📁 Upload File (.txt or .docx)")
-    uploaded_file = st.file_uploader(
-        "Choose a file to analyze",
-        type=['txt', 'docx'],
-        help="Upload a .txt or .docx file containing SRS/User Stories",
-        label_visibility="collapsed"
-    )
+    # File upload section with prominent button
+    st.markdown("### 📁 Upload & Analyze File")
     
+    # Create two columns for better layout
+    col_upload, col_info = st.columns([2, 1])
+    
+    with col_upload:
+        uploaded_file = st.file_uploader(
+            "Choose a .txt or .docx file",
+            type=['txt', 'docx'],
+            help="Upload a .txt or .docx file containing SRS/User Stories",
+            label_visibility="visible"
+        )
+    
+    # Show upload button if file is selected
     if uploaded_file is not None:
         # Show file info
         file_details = {
@@ -147,19 +227,34 @@ def show():
             "FileType": uploaded_file.type,
             "FileSize": f"{uploaded_file.size / 1024:.2f} KB"
         }
-        st.info(f"📄 **{uploaded_file.name}** ({file_details['FileSize']}) ready to analyze")
         
-        # Analyze file button
-        if st.button("🔍 Analyze File", type="primary", use_container_width=True):
+        with col_info:
+            st.markdown("<br>", unsafe_allow_html=True)  # Spacing
+            st.info(f"📄 **{uploaded_file.name}**\n\nSize: {file_details['FileSize']}")
+        
+        # Large prominent analyze button
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+        with col_btn2:
+            analyze_button = st.button(
+                "🔍 Analyze File",
+                type="primary",
+                use_container_width=True,
+                help="Click to analyze the uploaded file"
+            )
+        
+        # Analyze file when button is clicked
+        if analyze_button:
+            # Add user message about file upload
             st.session_state.messages.append({
                 "role": "user",
-                "content": f"Uploaded file: {uploaded_file.name}",
+                "content": f"📁 Uploaded file: **{uploaded_file.name}** ({file_details['FileSize']})",
                 "timestamp": datetime.now().isoformat()
             })
             
             st.session_state.processing = True
             try:
-                with st.spinner("🤖 Analyzing file..."):
+                with st.spinner("🤖 Analyzing file... This may take 10-30 seconds"):
                     # Analyze file via backend API
                     response = app.analyze_file(uploaded_file)
                     
@@ -172,7 +267,17 @@ def show():
                             "function_used": "analyze_requirements"
                         })
                         app.current_document = response
-                        st.success(f"✅ Analysis complete! Found {len(response.get('conflicts', []))} conflicts, {len(response.get('ambiguities', []))} ambiguities, {len(response.get('suggestions', []))} suggestions")
+                        
+                        # Success message with stats
+                        conflicts_count = len(response.get('conflicts', []))
+                        ambiguities_count = len(response.get('ambiguities', []))
+                        suggestions_count = len(response.get('suggestions', []))
+                        st.success(
+                            f"✅ **Analysis Complete!** "
+                            f"Found {conflicts_count} conflict(s), "
+                            f"{ambiguities_count} ambiguity(ies), "
+                            f"{suggestions_count} suggestion(s)"
+                        )
                     else:
                         # Add error response
                         error_msg = response.get("error", "Unknown error") if response else "Failed to analyze file"
@@ -182,7 +287,7 @@ def show():
                             "timestamp": datetime.now().isoformat(),
                             "function_used": "error"
                         })
-                        st.error(f"Error: {error_msg}")
+                        st.error(f"❌ Error: {error_msg}")
             except Exception as e:
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -190,10 +295,13 @@ def show():
                     "timestamp": datetime.now().isoformat(),
                     "function_used": "error"
                 })
-                st.error(f"Error analyzing file: {str(e)}")
+                st.error(f"❌ Error analyzing file: {str(e)}")
             finally:
                 st.session_state.processing = False
                 st.rerun()
+    else:
+        # Show placeholder when no file is uploaded
+        st.info("👆 **Select a file above** to upload and analyze your SRS/User Stories document (.txt or .docx)")
     
     st.markdown("---")
     st.markdown("### 💬 Or paste text below")
@@ -287,7 +395,7 @@ def show():
 
 def display_analysis_results(results: dict) -> None:
     """
-    Display formatted analysis results in the chat
+    Display formatted analysis results in the chat with 3-column layout
     
     Args:
         results: Analysis results dictionary with conflicts, ambiguities, suggestions
@@ -299,58 +407,102 @@ def display_analysis_results(results: dict) -> None:
     </div>
     """, unsafe_allow_html=True)
     
-    # Display in an expandable results section
-    with st.expander("📊 View Analysis Results", expanded=True):
-        # Conflicts
-        conflicts = results.get("conflicts", [])
+    # Get data
+    conflicts = results.get("conflicts", [])
+    ambiguities = results.get("ambiguities", [])
+    suggestions = results.get("suggestions", [])
+    
+    # Display summary stats
+    st.markdown("---")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Conflicts", len(conflicts), delta_color="inverse")
+    with col2:
+        st.metric("Ambiguities", len(ambiguities), delta_color="inverse")
+    with col3:
+        st.metric("Suggestions", len(suggestions), delta_color="normal")
+    with col4:
+        st.metric("Total Issues", len(conflicts) + len(ambiguities) + len(suggestions))
+    
+    st.markdown("---")
+    
+    # 3-column layout for results
+    col_conflicts, col_ambiguities, col_suggestions = st.columns(3)
+    
+    # Column 1: Conflicts
+    with col_conflicts:
+        st.markdown("### 🧩 Conflicts Detected", help="Conflicts between requirements")
+        st.markdown('<div class="analysis-column conflict-column">', unsafe_allow_html=True)
+        
         if conflicts:
-            st.markdown("### 🧩 Conflicts Detected")
             for i, conflict in enumerate(conflicts, 1):
-                req1 = conflict.get("req1", "")
-                req2 = conflict.get("req2", "")
-                desc = conflict.get("description", "")
+                req1 = conflict.get("req1", "N/A")
+                req2 = conflict.get("req2", "N/A")
+                desc = conflict.get("description", "No description")
                 st.markdown(f"""
                 <div class="conflict-item">
-                    <strong>Conflict {i}:</strong><br>
-                    <strong>Req 1:</strong> {req1}<br>
-                    <strong>Req 2:</strong> {req2}<br>
+                    <strong>Conflict {i}:</strong><br><br>
+                    <strong>Req 1:</strong> {req1}<br><br>
+                    <strong>Req 2:</strong> {req2}<br><br>
                     <strong>Issue:</strong> {desc}
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("✅ No conflicts detected!")
+            st.markdown("""
+            <div class="empty-state">
+                ✅ No conflicts detected!
+            </div>
+            """, unsafe_allow_html=True)
         
-        # Ambiguities
-        ambiguities = results.get("ambiguities", [])
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Column 2: Ambiguities
+    with col_ambiguities:
+        st.markdown("### ❓ Ambiguities Detected", help="Unclear or ambiguous requirements")
+        st.markdown('<div class="analysis-column ambiguity-column">', unsafe_allow_html=True)
+        
         if ambiguities:
-            st.markdown("### ❓ Ambiguities Detected")
             for i, ambiguity in enumerate(ambiguities, 1):
-                req = ambiguity.get("req", "")
-                issue = ambiguity.get("issue", "")
+                req = ambiguity.get("req", "N/A")
+                issue = ambiguity.get("issue", "No issue described")
                 st.markdown(f"""
                 <div class="ambiguity-item">
-                    <strong>Ambiguity {i}:</strong><br>
-                    <strong>Requirement:</strong> {req}<br>
+                    <strong>Ambiguity {i}:</strong><br><br>
+                    <strong>Requirement:</strong> {req}<br><br>
                     <strong>Issue:</strong> {issue}
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("✅ No ambiguities detected!")
+            st.markdown("""
+            <div class="empty-state">
+                ✅ No ambiguities detected!
+            </div>
+            """, unsafe_allow_html=True)
         
-        # Suggestions
-        suggestions = results.get("suggestions", [])
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Column 3: Suggestions
+    with col_suggestions:
+        st.markdown("### 💡 Improvement Suggestions", help="Suggested improvements for requirements")
+        st.markdown('<div class="analysis-column suggestion-column">', unsafe_allow_html=True)
+        
         if suggestions:
-            st.markdown("### 💡 Improvement Suggestions")
             for i, suggestion in enumerate(suggestions, 1):
-                req = suggestion.get("req", "")
-                new_version = suggestion.get("new_version", "")
+                req = suggestion.get("req", "N/A")
+                new_version = suggestion.get("new_version", "No suggestion")
                 st.markdown(f"""
                 <div class="suggestion-item">
-                    <strong>Suggestion {i}:</strong><br>
-                    <strong>Original:</strong> {req}<br>
+                    <strong>Suggestion {i}:</strong><br><br>
+                    <strong>Original:</strong> {req}<br><br>
                     <strong>Improved:</strong> {new_version}
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("✅ No suggestions at this time.")
+            st.markdown("""
+            <div class="empty-state">
+                ✅ No suggestions at this time.
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 

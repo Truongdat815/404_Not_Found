@@ -1,0 +1,11 @@
+REQ1: The payment system shall process transactions within 5 seconds.
+REQ2: Payment processing should be fast and efficient.
+REQ3: Users can make payments using credit cards only.
+REQ4: The system must accept multiple payment methods including PayPal, bank transfer, and cryptocurrency.
+REQ5: All transactions must be logged for audit purposes.
+REQ6: Transaction logs should not contain sensitive payment information.
+REQ7: The system shall provide real-time transaction status updates.
+REQ8: Transaction status updates may be delayed by up to 24 hours for batch processing.
+REQ9: The application must be user-friendly.
+REQ10: The system should achieve 95% user satisfaction rating in usability testing.
+
