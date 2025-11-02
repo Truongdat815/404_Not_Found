@@ -5,6 +5,7 @@ Service để quản lý lịch sử phân tích trong database
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database.models import AnalysisHistory
+from app.utils.logger import logger
 from datetime import datetime
 
 
@@ -48,6 +49,7 @@ def save_analysis(
     db.commit()
     db.refresh(analysis)
     
+    logger.info(f"Analysis saved with ID: {analysis.id}")
     return analysis
 
 

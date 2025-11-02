@@ -16,6 +16,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
+from app.utils.logger import logger
 
 # Load environment variables
 load_dotenv()
@@ -119,6 +120,7 @@ class RequirementsAnalysisAgent:
         ParseNode: Phân tích văn bản, tách từng requirement
         Model: gemini-1.5-pro
         """
+        logger.debug("Running ParseNode")
         prompt_template = PromptTemplate.from_template(self.parse_prompt)
         chain = prompt_template | self.llm_pro | StrOutputParser()
         
@@ -135,6 +137,7 @@ class RequirementsAnalysisAgent:
                 if line:
                     requirements.append(line)
         
+        logger.debug(f"Parsed {len(requirements)} requirements")
         return {
             "parsed_requirements": requirements
         }
@@ -144,6 +147,7 @@ class RequirementsAnalysisAgent:
         ConflictCheckNode: Phát hiện mâu thuẫn (contradiction/negation)
         Model: gemini-1.5-flash (mini)
         """
+        logger.debug("Running ConflictCheckNode")
         if not state.get("parsed_requirements"):
             return {"conflicts": []}
         
@@ -156,6 +160,7 @@ class RequirementsAnalysisAgent:
         
         # Parse JSON from result
         conflicts = self._parse_json_response(result, "conflicts")
+        logger.debug(f"Found {len(conflicts)} conflicts")
         
         return {"conflicts": conflicts}
     
@@ -164,6 +169,7 @@ class RequirementsAnalysisAgent:
         ClarityCheckNode: Phát hiện câu mơ hồ (ambiguous terms)
         Model: gemini-1.5-flash (mini)
         """
+        logger.debug("Running ClarityCheckNode")
         if not state.get("parsed_requirements"):
             return {"ambiguities": []}
         
@@ -176,6 +182,7 @@ class RequirementsAnalysisAgent:
         
         # Parse JSON from result
         ambiguities = self._parse_json_response(result, "ambiguities")
+        logger.debug(f"Found {len(ambiguities)} ambiguities")
         
         return {"ambiguities": ambiguities}
     
@@ -197,6 +204,7 @@ class RequirementsAnalysisAgent:
         ImproveNode: Đề xuất rewrite rõ ràng hơn
         Model: gemini-1.5-pro
         """
+        logger.debug("Running ImproveNode")
         if not state.get("parsed_requirements"):
             return {"suggestions": []}
         
@@ -216,6 +224,7 @@ class RequirementsAnalysisAgent:
         
         # Parse JSON from result
         suggestions = self._parse_json_response(result, "suggestions")
+        logger.debug(f"Generated {len(suggestions)} suggestions")
         
         return {"suggestions": suggestions}
     
@@ -285,6 +294,7 @@ class RequirementsAnalysisAgent:
         Returns:
             Dict với keys: conflicts, ambiguities, suggestions
         """
+        logger.info(f"Starting LangGraph analysis pipeline for text length: {len(input_text)} chars")
         initial_state: AgentState = {
             "input_text": input_text,
             "parsed_requirements": [],
@@ -295,12 +305,23 @@ class RequirementsAnalysisAgent:
         }
         
         # Run the graph
-        final_state = self.graph.invoke(initial_state)
+        try:
+            final_state = self.graph.invoke(initial_state)
+            logger.info("LangGraph pipeline completed successfully")
+        except Exception as e:
+            logger.error(f"LangGraph pipeline failed: {str(e)}")
+            raise
         
         # Return final result
-        return final_state.get("final_result", {
+        result = final_state.get("final_result", {
             "conflicts": final_state.get("conflicts", []),
             "ambiguities": final_state.get("ambiguities", []),
             "suggestions": final_state.get("suggestions", [])
         })
+        
+        logger.info(f"Analysis result: {len(result.get('conflicts', []))} conflicts, "
+                   f"{len(result.get('ambiguities', []))} ambiguities, "
+                   f"{len(result.get('suggestions', []))} suggestions")
+        
+        return result
 

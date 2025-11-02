@@ -25,5 +25,6 @@ class AnalyzeResponse(BaseModel):
     conflicts: List[ConflictItem]
     ambiguities: List[AmbiguityItem]
     suggestions: List[SuggestionItem]
+    analysis_id: Optional[int] = None  # ID của analysis trong database (nếu đã lưu)
     raw_response: Optional[str] = None
 
