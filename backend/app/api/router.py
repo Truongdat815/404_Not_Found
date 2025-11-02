@@ -1,10 +1,14 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 from app.api.schema import AnalyzeRequest, AnalyzeResponse, ConflictItem, AmbiguityItem, SuggestionItem
 from app.agents.langgraph_agent import RequirementsAnalysisAgent
 from app.utils.file_handler import extract_text_from_file, save_uploaded_file, cleanup_file
+from app.database.db import get_db
+from app.services.history_service import save_analysis
 import os
 from typing import Optional
+import time
 
 router = APIRouter(prefix="/api", tags=["Analysis"])
 
@@ -50,12 +54,38 @@ async def analyze_requirements(request: AnalyzeRequest):
         agent = get_agent()
         
         # Analyze using LangGraph agent
+        start_time = time.time()
         result = agent.analyze(request.text)
+        processing_time = int(time.time() - start_time)
         
         # Convert to response model
         conflicts = [ConflictItem(**item) for item in result.get("conflicts", [])]
         ambiguities = [AmbiguityItem(**item) for item in result.get("ambiguities", [])]
         suggestions = [SuggestionItem(**item) for item in result.get("suggestions", [])]
+        
+        # Lưu vào database (optional, không fail nếu DB không available)
+        try:
+            from app.database.db import get_engine
+            engine = get_engine()
+            if engine:
+                from app.database.db import SessionLocal
+                db = SessionLocal()
+                try:
+                    save_analysis(
+                        db=db,
+                        conflicts=[item.dict() for item in conflicts],
+                        ambiguities=[item.dict() for item in ambiguities],
+                        suggestions=[item.dict() for item in suggestions],
+                        text_input=request.text,
+                        file_name=None,
+                        model_used=request.model,
+                        processing_time_seconds=processing_time
+                    )
+                finally:
+                    db.close()
+        except Exception as e:
+            # Log error nhưng không fail request
+            print(f"Warning: Failed to save to database: {str(e)}")
         
         return AnalyzeResponse(
             conflicts=conflicts,
@@ -118,12 +148,38 @@ async def analyze_requirements_from_file(
         agent = get_agent()
         
         # Analyze using LangGraph agent
+        start_time = time.time()
         result = agent.analyze(text_content)
+        processing_time = int(time.time() - start_time)
         
         # Convert to response model
         conflicts = [ConflictItem(**item) for item in result.get("conflicts", [])]
         ambiguities = [AmbiguityItem(**item) for item in result.get("ambiguities", [])]
         suggestions = [SuggestionItem(**item) for item in result.get("suggestions", [])]
+        
+        # Lưu vào database (optional, không fail nếu DB không available)
+        try:
+            from app.database.db import get_engine
+            engine = get_engine()
+            if engine:
+                from app.database.db import SessionLocal
+                db = SessionLocal()
+                try:
+                    save_analysis(
+                        db=db,
+                        conflicts=[item.dict() for item in conflicts],
+                        ambiguities=[item.dict() for item in ambiguities],
+                        suggestions=[item.dict() for item in suggestions],
+                        text_input=None,
+                        file_name=file.filename,
+                        model_used=model,
+                        processing_time_seconds=processing_time
+                    )
+                finally:
+                    db.close()
+        except Exception as e:
+            # Log error nhưng không fail request
+            print(f"Warning: Failed to save to database: {str(e)}")
         
         return AnalyzeResponse(
             conflicts=conflicts,

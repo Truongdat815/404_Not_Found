@@ -38,6 +38,7 @@ logs/
 
 # Uploaded files
 uploads/
+exports/
 *.txt
 *.docx
 !requirements.txt
