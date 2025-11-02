@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+\.env
+__pycache__/
+*.pyc
+=======
 # Python
 __pycache__/
 *.py[cod]
@@ -70,3 +75,5 @@ htmlcov/
 Thumbs.db
 .DS_Store
 
+>>>>>>> upstream/thaobackend
+backend/.env
