@@ -36,3 +36,10 @@ logs/
 .vscode/
 .idea/
 
+# Uploaded files
+uploads/
+exports/
+*.txt
+*.docx
+!requirements.txt
+
