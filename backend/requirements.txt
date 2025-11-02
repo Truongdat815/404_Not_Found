@@ -9,4 +9,6 @@ python-docx
 tiktoken
 python-dotenv
 pydantic
+pyodbc
+sqlalchemy
 
