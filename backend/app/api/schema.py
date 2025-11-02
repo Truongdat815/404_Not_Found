@@ -1,8 +1,9 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-# Request schema
+# Request schemas
 class AnalyzeRequest(BaseModel):
+    """Request schema for text analysis"""
     text: str
     model: Optional[str] = "gemini-1.5-pro"
 
