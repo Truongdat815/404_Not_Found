@@ -1,8 +1,9 @@
-from agent import RequirementsAgent
+from backend.app.agent import RequirementsAgent
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+# load dotenv from backend/.env so config lives with backend
+load_dotenv('backend/.env')
 
 def main():
     api_key = os.getenv("GOOGLE_API_KEY")
