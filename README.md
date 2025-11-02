@@ -28,9 +28,9 @@ Empowering developers with smarter requirement validation through AI — reducin
 ##  Tech Stack
 
 - **Core AI:** OpenAI, Claude, ChatGPT, Cursor
-- **Frontend:** React / Vite / TailwindCSS  
-- **Backend:** Node.js / FastAPI  
-- **Database:** SQL Server  
+- **Frontend:** Streamlit (Python)  
+- **Backend:** FastAPI / LangGraph  
+- **Database:** SQLite / SQL Server  
 
 ---
 

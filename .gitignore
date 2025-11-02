@@ -52,6 +52,9 @@ build/
 .next/
 out/
 
+# Frontend (React - removed, using Streamlit now)
+frontend/
+
 # Testing
 .coverage
 htmlcov/
