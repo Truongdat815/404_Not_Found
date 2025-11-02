@@ -76,8 +76,10 @@ def get_engine():
 
 def get_db():
     """Dependency để lấy database session"""
+    global SessionLocal
     engine = get_engine()
-    if engine is None or SessionLocal is None:
+    
+    if engine is None:
         # Nếu không có DB, raise HTTPException
         from fastapi import HTTPException
         raise HTTPException(
@@ -85,6 +87,7 @@ def get_db():
             detail="Database not available. Please check SQL Server connection."
         )
     
+    # Đảm bảo SessionLocal được tạo nếu engine tồn tại
     if SessionLocal is None:
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
