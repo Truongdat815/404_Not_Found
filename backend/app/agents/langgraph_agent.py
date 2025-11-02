@@ -37,28 +37,28 @@ class RequirementsAnalysisAgent:
     Pipeline: ParseNode -> [ConflictCheckNode, ClarityCheckNode] (parallel) -> ImproveNode -> AggregatorNode
     """
     
-    def __init__(self, api_key: str = None, model: str = "gemini-1.5-pro"):
+    def __init__(self, api_key: str = None, model: str = "gemini-2.5-flash"):
         """
         Initialize the agent
         
         Args:
             api_key: Gemini API key (nếu None, lấy từ env GEMINI_API_KEY)
-            model: Model name (gemini-1.5-pro hoặc gemini-1.5-flash)
+            model: Model name (gemini-2.5-flash, gemini-2.5-pro, gemini-1.5-pro, hoặc gemini-1.5-flash)
         """
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found. Please set it in .env file")
         
-        # Initialize LLM
+        # Initialize LLM với Gemini 2.5 Flash (mặc định)
         self.llm_pro = ChatGoogleGenerativeAI(
             google_api_key=self.api_key,
             model=model
         )
         
-        # Use faster model for parallel checks
+        # Use faster model for parallel checks (cũng dùng 2.5 Flash)
         self.llm_mini = ChatGoogleGenerativeAI(
             google_api_key=self.api_key,
-            model="gemini-1.5-flash"  # Faster for parallel processing
+            model="gemini-2.5-flash"  # Faster for parallel processing, Gemini 2.5
         )
         
         # Load prompts
@@ -118,7 +118,7 @@ class RequirementsAnalysisAgent:
     def parse_node(self, state: AgentState) -> AgentState:
         """
         ParseNode: Phân tích văn bản, tách từng requirement
-        Model: gemini-1.5-pro
+        Model: gemini-2.5-flash (hoặc model được chỉ định)
         """
         logger.debug("Running ParseNode")
         prompt_template = PromptTemplate.from_template(self.parse_prompt)
@@ -145,7 +145,7 @@ class RequirementsAnalysisAgent:
     def conflict_check_node(self, state: AgentState) -> AgentState:
         """
         ConflictCheckNode: Phát hiện mâu thuẫn (contradiction/negation)
-        Model: gemini-1.5-flash (mini)
+        Model: gemini-2.5-flash (faster for parallel processing)
         """
         logger.debug("Running ConflictCheckNode")
         if not state.get("parsed_requirements"):
@@ -167,7 +167,7 @@ class RequirementsAnalysisAgent:
     def clarity_check_node(self, state: AgentState) -> AgentState:
         """
         ClarityCheckNode: Phát hiện câu mơ hồ (ambiguous terms)
-        Model: gemini-1.5-flash (mini)
+        Model: gemini-2.5-flash (faster for parallel processing)
         """
         logger.debug("Running ClarityCheckNode")
         if not state.get("parsed_requirements"):
@@ -202,7 +202,7 @@ class RequirementsAnalysisAgent:
     def improve_node(self, state: AgentState) -> AgentState:
         """
         ImproveNode: Đề xuất rewrite rõ ràng hơn
-        Model: gemini-1.5-pro
+        Model: gemini-2.5-flash (hoặc model được chỉ định)
         """
         logger.debug("Running ImproveNode")
         if not state.get("parsed_requirements"):

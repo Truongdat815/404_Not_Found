@@ -5,7 +5,7 @@ from typing import List, Optional
 class AnalyzeRequest(BaseModel):
     """Request schema for text analysis"""
     text: str
-    model: Optional[str] = "gemini-1.5-pro"
+    model: Optional[str] = "gemini-2.5-flash"  # Gemini 2.5 Flash (default)
 
 # Response schemas
 class ConflictItem(BaseModel):

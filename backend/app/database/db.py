@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
+from app.utils.logger import logger
 
 load_dotenv()
 
@@ -52,35 +53,38 @@ def get_engine():
             )
             
             # Test connection
+            from sqlalchemy import text
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
-            
-            print(f"✅ Database connected successfully!")
-            print(f"Connection string: {conn_str.split('@')[0]}@...")
+                conn.execute(text("SELECT 1"))
             
             # Create session factory
             SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            logger.info("Database connected successfully!")
             
             return engine
             
         except Exception as e:
-            print(f"❌ Connection failed with: {conn_str.split('@')[0]}@...")
-            print(f"   Error: {str(e)}")
+            # Log warning nhưng tiếp tục thử connection string tiếp theo
+            logger.debug(f"Connection attempt failed: {str(e)[:100]}")
             continue
     
-    # Nếu tất cả đều fail
-    raise Exception(
-        "Cannot connect to SQL Server. Please check:\n"
-        "1. SQL Server is running\n"
-        "2. Database 'Hackathon' exists\n"
-        "3. User 'sa' has permission\n"
-        "4. SQL Server authentication is enabled"
-    )
+    # Nếu tất cả đều fail - return None thay vì raise exception
+    # Server vẫn chạy được, chỉ history features không hoạt động
+    logger.warning("All database connection attempts failed. History features will be disabled.")
+    return None
 
 
 def get_db():
     """Dependency để lấy database session"""
     engine = get_engine()
+    if engine is None or SessionLocal is None:
+        # Nếu không có DB, raise HTTPException
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503,
+            detail="Database not available. Please check SQL Server connection."
+        )
+    
     if SessionLocal is None:
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
@@ -94,6 +98,13 @@ def get_db():
 def init_db():
     """Initialize database - tạo tables nếu chưa có"""
     engine = get_engine()
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database tables created/verified")
+    if engine is None:
+        return  # Không có DB, skip initialization
+    
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created/verified")
+    except Exception as e:
+        # Log error nhưng không fail
+        logger.warning(f"Failed to create database tables: {str(e)}")
 

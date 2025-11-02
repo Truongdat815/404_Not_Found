@@ -113,7 +113,7 @@ async def analyze_requirements(request: AnalyzeRequest):
 @router.post("/analyze/file", response_model=AnalyzeResponse)
 async def analyze_requirements_from_file(
     file: UploadFile = File(...),
-    model: str = Form("gemini-1.5-pro")
+    model: str = Form("gemini-2.5-flash")
 ):
     """
     Phân tích SRS/User Stories từ uploaded file
@@ -126,7 +126,7 @@ async def analyze_requirements_from_file(
     
     Args:
         file: Uploaded file (.txt or .docx)
-        model: Model Gemini để sử dụng (mặc định: gemini-1.5-pro)
+        model: Model Gemini để sử dụng (mặc định: gemini-2.5-flash)
     
     Returns:
         AnalyzeResponse với conflicts, ambiguities, suggestions
