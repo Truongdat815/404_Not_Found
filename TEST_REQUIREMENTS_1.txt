@@ -1,0 +1,11 @@
+REQ1: The system shall allow users to login with email and password.
+REQ2: The system shall not require users to login for basic access.
+REQ3: Users must provide their email address during registration.
+REQ4: Users can skip email verification if they want to proceed faster.
+REQ5: The system should display user information on the dashboard.
+REQ6: The system shall protect user privacy and not display personal information.
+REQ7: The application should respond quickly to user requests.
+REQ8: The system must support all modern web browsers and mobile devices.
+REQ9: All user data must be encrypted for security.
+REQ10: Users should be able to access their data easily without complex security checks.
+

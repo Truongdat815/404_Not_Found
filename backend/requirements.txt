@@ -11,4 +11,7 @@ python-dotenv
 pydantic
 pyodbc
 sqlalchemy
+pytest
+httpx
+python-multipart
 

@@ -6,6 +6,7 @@ from app.agents.langgraph_agent import RequirementsAnalysisAgent
 from app.utils.file_handler import extract_text_from_file, save_uploaded_file, cleanup_file
 from app.database.db import get_db
 from app.services.history_service import save_analysis
+from app.utils.logger import logger
 import os
 from typing import Optional
 import time
@@ -54,16 +55,21 @@ async def analyze_requirements(request: AnalyzeRequest):
         agent = get_agent()
         
         # Analyze using LangGraph agent
+        logger.info(f"Starting analysis with model: {request.model}")
         start_time = time.time()
         result = agent.analyze(request.text)
         processing_time = int(time.time() - start_time)
+        logger.info(f"Analysis completed in {processing_time} seconds")
         
         # Convert to response model
         conflicts = [ConflictItem(**item) for item in result.get("conflicts", [])]
         ambiguities = [AmbiguityItem(**item) for item in result.get("ambiguities", [])]
         suggestions = [SuggestionItem(**item) for item in result.get("suggestions", [])]
         
+        logger.info(f"Found: {len(conflicts)} conflicts, {len(ambiguities)} ambiguities, {len(suggestions)} suggestions")
+        
         # Lưu vào database (optional, không fail nếu DB không available)
+        analysis_id = None
         try:
             from app.database.db import get_engine
             engine = get_engine()
@@ -71,7 +77,7 @@ async def analyze_requirements(request: AnalyzeRequest):
                 from app.database.db import SessionLocal
                 db = SessionLocal()
                 try:
-                    save_analysis(
+                    saved_analysis = save_analysis(
                         db=db,
                         conflicts=[item.dict() for item in conflicts],
                         ambiguities=[item.dict() for item in ambiguities],
@@ -81,16 +87,19 @@ async def analyze_requirements(request: AnalyzeRequest):
                         model_used=request.model,
                         processing_time_seconds=processing_time
                     )
+                    analysis_id = saved_analysis.id
+                    logger.info(f"Analysis saved to database with ID: {analysis_id}")
                 finally:
                     db.close()
         except Exception as e:
             # Log error nhưng không fail request
-            print(f"Warning: Failed to save to database: {str(e)}")
+            logger.warning(f"Failed to save to database: {str(e)}")
         
         return AnalyzeResponse(
             conflicts=conflicts,
             ambiguities=ambiguities,
-            suggestions=suggestions
+            suggestions=suggestions,
+            analysis_id=analysis_id
         )
         
     except ValueError as e:
@@ -104,7 +113,7 @@ async def analyze_requirements(request: AnalyzeRequest):
 @router.post("/analyze/file", response_model=AnalyzeResponse)
 async def analyze_requirements_from_file(
     file: UploadFile = File(...),
-    model: str = Form("gemini-1.5-pro")
+    model: str = Form("gemini-2.5-flash")
 ):
     """
     Phân tích SRS/User Stories từ uploaded file
@@ -117,7 +126,7 @@ async def analyze_requirements_from_file(
     
     Args:
         file: Uploaded file (.txt or .docx)
-        model: Model Gemini để sử dụng (mặc định: gemini-1.5-pro)
+        model: Model Gemini để sử dụng (mặc định: gemini-2.5-flash)
     
     Returns:
         AnalyzeResponse với conflicts, ambiguities, suggestions
@@ -148,16 +157,21 @@ async def analyze_requirements_from_file(
         agent = get_agent()
         
         # Analyze using LangGraph agent
+        logger.info(f"Starting file analysis: {file.filename} with model: {model}")
         start_time = time.time()
         result = agent.analyze(text_content)
         processing_time = int(time.time() - start_time)
+        logger.info(f"File analysis completed in {processing_time} seconds")
         
         # Convert to response model
         conflicts = [ConflictItem(**item) for item in result.get("conflicts", [])]
         ambiguities = [AmbiguityItem(**item) for item in result.get("ambiguities", [])]
         suggestions = [SuggestionItem(**item) for item in result.get("suggestions", [])]
         
+        logger.info(f"Found: {len(conflicts)} conflicts, {len(ambiguities)} ambiguities, {len(suggestions)} suggestions")
+        
         # Lưu vào database (optional, không fail nếu DB không available)
+        analysis_id = None
         try:
             from app.database.db import get_engine
             engine = get_engine()
@@ -165,7 +179,7 @@ async def analyze_requirements_from_file(
                 from app.database.db import SessionLocal
                 db = SessionLocal()
                 try:
-                    save_analysis(
+                    saved_analysis = save_analysis(
                         db=db,
                         conflicts=[item.dict() for item in conflicts],
                         ambiguities=[item.dict() for item in ambiguities],
@@ -175,16 +189,19 @@ async def analyze_requirements_from_file(
                         model_used=model,
                         processing_time_seconds=processing_time
                     )
+                    analysis_id = saved_analysis.id
+                    logger.info(f"Analysis saved to database with ID: {analysis_id}")
                 finally:
                     db.close()
         except Exception as e:
             # Log error nhưng không fail request
-            print(f"Warning: Failed to save to database: {str(e)}")
+            logger.warning(f"Failed to save to database: {str(e)}")
         
         return AnalyzeResponse(
             conflicts=conflicts,
             ambiguities=ambiguities,
-            suggestions=suggestions
+            suggestions=suggestions,
+            analysis_id=analysis_id
         )
         
     except HTTPException:
