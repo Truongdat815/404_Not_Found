@@ -1,29 +1,30 @@
 """
 Core agent module for analyzing SRS/User Stories
 Multi-function agent with intent routing and chat interface support
+Uses HTTP API to connect to FastAPI backend
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import os
-import sys
+import requests
 from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Add backend to path to import agent
-backend_path = Path(__file__).parent.parent.parent / "backend" / "app"
-if str(backend_path) not in sys.path:
-    sys.path.insert(0, str(backend_path))
+# Backend API configuration
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+BACKEND_AVAILABLE = True  # Always assume backend is available via HTTP
 
+# Check if backend is reachable
 try:
-    from agents.langgraph_agent import RequirementsAnalysisAgent
-    BACKEND_AVAILABLE = True
-except ImportError:
+    response = requests.get(f"{API_BASE_URL}/health", timeout=2)
+    BACKEND_AVAILABLE = response.status_code == 200
+except:
     BACKEND_AVAILABLE = False
-    print("Warning: Backend agent not available. Using mock mode.")
+    print(f"Warning: Backend API at {API_BASE_URL} not reachable. Some features may not work.")
 
 
 class Agent:
@@ -31,19 +32,11 @@ class Agent:
     
     def __init__(self):
         """Initialize the agent"""
-        self.backend_agent = None
+        self.api_base_url = API_BASE_URL
+        self.backend_available = BACKEND_AVAILABLE
         self.current_document = None
         self.conversation_context = []
-        
-        # Try to initialize backend agent
-        if BACKEND_AVAILABLE:
-            try:
-                api_key = os.getenv("GEMINI_API_KEY")
-                if api_key:
-                    self.backend_agent = RequirementsAnalysisAgent(api_key=api_key)
-            except Exception as e:
-                print(f"Warning: Could not initialize backend agent: {e}")
-                self.backend_agent = None
+        self.current_analysis_id = None  # Store analysis ID for export
     
     def invoke(self, text: str) -> Dict[str, Any]:
         """
@@ -166,7 +159,7 @@ class Agent:
     
     def _analyze_requirements(self, text: str) -> Dict[str, Any]:
         """
-        Analyze full SRS/User Stories document
+        Analyze full SRS/User Stories document via HTTP API
         
         Args:
             text: Requirements document text
@@ -175,20 +168,62 @@ class Agent:
             Analysis results with conflicts, ambiguities, suggestions
         """
         try:
-            if self.backend_agent:
-                # Use backend agent
-                result = self.backend_agent.analyze(text)
-                self.current_document = result
-                return result
+            if self.backend_available:
+                # Call backend HTTP API
+                response = requests.post(
+                    f"{self.api_base_url}/api/analyze",
+                    json={
+                        "text": text,
+                        "model": "gemini-2.5-flash"
+                    },
+                    timeout=120  # 2 minutes for AI processing
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    # Store analysis_id for later use (export, history)
+                    self.current_analysis_id = result.get("analysis_id")
+                    self.current_document = result
+                    # Add function_used metadata
+                    result["function_used"] = "analyze_requirements"
+                    return result
+                else:
+                    error_msg = response.json().get("detail", "Unknown error")
+                    return {
+                        "conflicts": [],
+                        "ambiguities": [],
+                        "suggestions": [],
+                        "error": f"API Error ({response.status_code}): {error_msg}",
+                        "function_used": "error"
+                    }
             else:
-                # Mock response for testing
-                return self._get_mock_analysis_result(text)
+                # Fallback to mock response if backend unavailable
+                mock_result = self._get_mock_analysis_result(text)
+                mock_result["function_used"] = "analyze_requirements"
+                return mock_result
+        except requests.exceptions.Timeout:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": "Request timeout. The analysis is taking too long. Please try with a shorter text.",
+                "function_used": "error"
+            }
+        except requests.exceptions.ConnectionError:
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": [],
+                "error": f"Cannot connect to backend API at {self.api_base_url}. Please ensure the backend server is running on port 8000.",
+                "function_used": "error"
+            }
         except Exception as e:
             return {
                 "conflicts": [],
                 "ambiguities": [],
                 "suggestions": [],
-                "error": str(e)
+                "error": f"Error: {str(e)}",
+                "function_used": "error"
             }
     
     def _answer_question(self, text: str, context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -311,7 +346,7 @@ class Agent:
         }
     
     def _get_mock_analysis_result(self, text: str) -> Dict[str, Any]:
-        """Return mock analysis result for testing"""
+        """Return mock analysis result for testing when backend is unavailable"""
         return {
             "conflicts": [
                 {
@@ -344,8 +379,59 @@ class Agent:
                     "req": "Reports should be generated quickly",
                     "new_version": "Reports should be generated within 5 seconds for datasets up to 10,000 records"
                 }
-            ]
+            ],
+            "analysis_id": None,
+            "function_used": "analyze_requirements"
         }
+    
+    def get_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get analysis history from backend API
+        
+        Args:
+            limit: Number of history items to retrieve
+            
+        Returns:
+            List of analysis history items
+        """
+        try:
+            if self.backend_available:
+                response = requests.get(
+                    f"{self.api_base_url}/api/history",
+                    params={"limit": limit},
+                    timeout=10
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return data.get("items", [])
+            return []
+        except Exception as e:
+            print(f"Error fetching history: {e}")
+            return []
+    
+    def export_analysis(self, analysis_id: int, format: str = "json") -> Optional[bytes]:
+        """
+        Export analysis result from backend
+        
+        Args:
+            analysis_id: ID of analysis to export
+            format: Export format ("json" or "docx")
+            
+        Returns:
+            File content as bytes, or None if error
+        """
+        try:
+            if self.backend_available:
+                response = requests.get(
+                    f"{self.api_base_url}/api/export/{format}/{analysis_id}",
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    return response.content
+            return None
+        except Exception as e:
+            print(f"Error exporting analysis: {e}")
+            return None
 
 
 # Create a global app instance
