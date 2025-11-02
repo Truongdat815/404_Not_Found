@@ -14,6 +14,7 @@ from app.services.export_service import (
     export_to_docx,
     cleanup_export_file
 )
+from app.utils.logger import logger
 import os
 
 router = APIRouter(prefix="/api/export", tags=["Export"])
@@ -51,6 +52,7 @@ async def export_json(
         
         # Return file
         if os.path.exists(export_path):
+            logger.info(f"JSON export successful for analysis_id: {analysis_id}")
             return FileResponse(
                 export_path,
                 media_type="application/json",
@@ -58,8 +60,12 @@ async def export_json(
                 headers={"Content-Disposition": f"attachment; filename={filename}"}
             )
         else:
+            logger.error(f"Export file not found: {export_path}")
             raise HTTPException(status_code=500, detail="Failed to generate export file")
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Export JSON error for analysis_id {analysis_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
 
 
@@ -95,6 +101,7 @@ async def export_docx(
         
         # Return file
         if os.path.exists(export_path):
+            logger.info(f"DOCX export successful for analysis_id: {analysis_id}")
             return FileResponse(
                 export_path,
                 media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -102,7 +109,11 @@ async def export_docx(
                 headers={"Content-Disposition": f"attachment; filename={filename}"}
             )
         else:
+            logger.error(f"Export file not found: {export_path}")
             raise HTTPException(status_code=500, detail="Failed to generate export file")
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Export DOCX error for analysis_id {analysis_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Export error: {str(e)}")
 

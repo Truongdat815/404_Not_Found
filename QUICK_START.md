@@ -1,95 +1,110 @@
-# 🚀 Quick Start Guide - AI Requirements Assistant
+# 🚀 Quick Start Guide - Run Full Stack
 
-## ✅ Setup Complete!
+## Prerequisites
 
-Tất cả dependencies và configuration đã được setup xong. Bạn có thể chạy ứng dụng ngay!
+- Python 3.10+
+- SQL Server running (local)
+- Gemini API Key configured
 
-## 🎯 Chạy Frontend (Streamlit Chat Interface)
-
-### Cách 1: Từ root directory
-
-```bash
-streamlit run frontend/app.py
-```
-
-### Cách 2: Từ thư mục frontend
-
-```bash
-cd frontend
-streamlit run app.py
-```
-
-Sau đó mở browser tại: **http://localhost:8501**
-
-## 🔧 Chạy Backend API (Optional)
-
-Nếu muốn chạy backend API riêng (frontend vẫn hoạt động được mà không cần backend vì đã import trực tiếp):
+## 📋 Step 1: Start Backend
 
 ```bash
 cd backend
-.\venv\Scripts\Activate.ps1  # Kích hoạt virtual environment (nếu có)
-uvicorn main:app --reload
+.\venv\Scripts\Activate.ps1
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-API sẽ chạy tại: **http://localhost:8000**
+**Verify:** Open http://127.0.0.1:8000/health
 
-## 📋 Cấu trúc đã hoàn thiện
+## 📋 Step 2: Start Frontend
 
-### Frontend
-- ✅ `frontend/app.py` - Main Streamlit app
-- ✅ `frontend/pages/1_Analyze_Document.py` - Chat interface
-- ✅ `frontend/core/agent.py` - Multi-function AI agent
-- ✅ `requirements.txt` - Đã có streamlit và tất cả dependencies
+**In a NEW terminal:**
 
-### Backend
-- ✅ `backend/main.py` - FastAPI server
-- ✅ `backend/app/agents/langgraph_agent.py` - LangGraph agent
-- ✅ `backend/app/agents/prompts/` - 4 prompt files (parse, conflict, ambiguity, improve)
-- ✅ `backend/app/api/router.py` - API endpoints
-- ✅ `backend/requirements.txt` - Dependencies
+```bash
+# From project root
+pip install -r frontend/requirements.txt
+streamlit run frontend/app.py
+```
 
-### Configuration
-- ✅ `.env` - GEMINI_API_KEY (ở cả root và backend)
-- ✅ Tất cả dependencies đã được cài đặt
+**Or:**
 
-## 🎨 Tính năng
+```bash
+cd frontend
+pip install -r requirements.txt
+streamlit run app.py
+```
 
-### Chat Interface
-- Claude-like UI với message bubbles
-- Text-only input
-- Multiple agent functions:
-  - Analyze requirements documents
-  - Answer questions
-  - Generate test cases
-  - Explain conflicts
+**Frontend will run on:** http://localhost:8501
 
-### Agent Functions
-1. **analyze_requirements**: Phân tích full SRS document
-2. **answer_question**: Trả lời câu hỏi về requirements
-3. **generate_test_cases**: Tạo test cases
-4. **explain_conflicts**: Giải thích conflicts chi tiết
+## ✅ Verify Connection
 
-## 📝 Sử dụng
+1. **Backend Health:** http://127.0.0.1:8000/health
+2. **Frontend:** http://localhost:8501
+3. **API Docs:** http://127.0.0.1:8000/docs
 
-1. Paste một requirements document vào chat
-2. AI sẽ tự động detect và analyze
-3. Có thể hỏi thêm câu hỏi sau khi analyze
-4. Export chat history hoặc clear chat
+## 🎯 Test Full Flow
 
-## 🐛 Troubleshooting
+1. Open http://localhost:8501 in browser
+2. Paste requirements text:
+   ```
+   REQ1: The system shall display user information.
+   REQ2: The system shall not display user information.
+   ```
+3. Click "Send"
+4. Wait for analysis (10-30 seconds)
+5. See results: Conflicts, Ambiguities, Suggestions
+6. Results are automatically saved to database!
 
-### Agent chạy mock mode?
-- Kiểm tra file `.env` có GEMINI_API_KEY
-- Chạy: `python -c "from dotenv import load_dotenv; import os; load_dotenv(); print(os.getenv('GEMINI_API_KEY'))"`
+## 🔧 Troubleshooting
 
-### ModuleNotFoundError?
-- Chạy: `pip install -r requirements.txt`
+### Frontend can't connect to backend
 
-### Backend không khởi động?
-- Kiểm tra file `.env` trong `backend/`
-- Activate virtual environment: `backend\venv\Scripts\Activate.ps1`
+**Check:**
+- Backend is running on port 8000
+- No firewall blocking
+- CORS is configured (already done)
 
-## 🎉 Done!
+**Solution:**
+```bash
+# Test backend manually
+curl http://127.0.0.1:8000/health
+# Or in PowerShell:
+Invoke-RestMethod -Uri http://127.0.0.1:8000/health
+```
 
-Chúc bạn hackathon vui vẻ! 🚀
+### Frontend shows mock data
 
+**Cause:** Backend not reachable
+
+**Solution:**
+1. Check backend is running
+2. Check API_BASE_URL in frontend/.env (optional)
+3. Default: http://127.0.0.1:8000
+
+### Port 8501 already in use
+
+**Solution:**
+```bash
+# Use different port
+streamlit run frontend/app.py --server.port 8502
+```
+
+## 📊 Architecture
+
+```
+Frontend (Streamlit)      Backend (FastAPI)
+localhost:8501    →      127.0.0.1:8000
+   │                        │
+   │  HTTP API Calls        │
+   ├──> POST /api/analyze   │
+   ├──> GET /api/history    │
+   └──> GET /api/export/... │
+                              │
+                              ├──> LangGraph Agent (Gemini 2.5 Flash)
+                              ├──> SQL Server Database
+                              └──> Export Services
+```
+
+---
+
+**Happy Coding! 🎉**

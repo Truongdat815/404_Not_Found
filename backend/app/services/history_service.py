@@ -5,6 +5,7 @@ Service để quản lý lịch sử phân tích trong database
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database.models import AnalysisHistory
+from app.utils.logger import logger
 from datetime import datetime
 
 
@@ -48,6 +49,7 @@ def save_analysis(
     db.commit()
     db.refresh(analysis)
     
+    logger.info(f"Analysis saved with ID: {analysis.id}")
     return analysis
 
 
@@ -120,13 +122,25 @@ def search_analysis(
     Returns:
         List of AnalysisHistory objects
     """
-    query = db.query(AnalysisHistory)
+    from app.utils.logger import logger
+    from sqlalchemy import or_
     
-    if search_text:
-        query = query.filter(
-            (AnalysisHistory.text_input.contains(search_text)) |
-            (AnalysisHistory.file_name.contains(search_text))
-        )
-    
-    return query.order_by(AnalysisHistory.created_at.desc()).limit(limit).all()
+    try:
+        query = db.query(AnalysisHistory)
+        
+        if search_text:
+            # SQL Server sử dụng .like() với pattern %text% cho case-insensitive search
+            # Xử lý null values bằng cách dùng or_ với IS NULL check
+            search_pattern = f"%{search_text}%"
+            query = query.filter(
+                or_(
+                    AnalysisHistory.text_input.like(search_pattern),
+                    AnalysisHistory.file_name.like(search_pattern)
+                )
+            )
+        
+        return query.order_by(AnalysisHistory.created_at.desc()).limit(limit).all()
+    except Exception as e:
+        logger.error(f"Error in search_analysis: {str(e)}")
+        raise
 

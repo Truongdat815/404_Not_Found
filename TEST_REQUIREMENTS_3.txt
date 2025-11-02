@@ -1,0 +1,11 @@
+REQ1: The admin dashboard shall display all user accounts.
+REQ2: Admin users can view user accounts only with proper authorization.
+REQ3: The system shall send email notifications immediately after user registration.
+REQ4: Email notifications may be sent within 24 hours of registration.
+REQ5: User passwords must be at least 8 characters long.
+REQ6: The system should encourage users to create strong passwords.
+REQ7: All API endpoints must require authentication.
+REQ8: The public documentation API endpoint is accessible without authentication.
+REQ9: Reports should be generated on-demand.
+REQ10: Daily reports are automatically generated at midnight.
+
