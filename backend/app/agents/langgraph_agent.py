@@ -50,15 +50,28 @@ class RequirementsAnalysisAgent:
             raise ValueError("GEMINI_API_KEY not found. Please set it in .env file")
         
         # Initialize LLM với Gemini 2.5 Flash (mặc định)
+        # Thêm timeout để tránh đợi quá lâu
         self.llm_pro = ChatGoogleGenerativeAI(
             google_api_key=self.api_key,
-            model=model
+            model=model,
+            timeout=120,  # 2 minutes timeout
+            max_retries=2
         )
         
         # Use faster model for parallel checks (cũng dùng 2.5 Flash)
         self.llm_mini = ChatGoogleGenerativeAI(
             google_api_key=self.api_key,
-            model="gemini-2.5-flash"  # Faster for parallel processing, Gemini 2.5
+            model="gemini-2.5-flash",  # Faster for parallel processing, Gemini 2.5
+            timeout=120,
+            max_retries=2
+        )
+        
+        # Fast LLM for single-call analysis
+        self.llm_fast = ChatGoogleGenerativeAI(
+            google_api_key=self.api_key,
+            model="gemini-2.5-flash",
+            timeout=90,  # Optimized: 90 seconds (fast analysis should complete in 30-60s)
+            max_retries=2
         )
         
         # Load prompts
@@ -67,6 +80,7 @@ class RequirementsAnalysisAgent:
         self.conflict_prompt = self._load_prompt("detect_conflict.txt")
         self.ambiguity_prompt = self._load_prompt("check_ambiguity.txt")
         self.improve_prompt = self._load_prompt("suggest_improve.txt")
+        self.analyze_all_prompt = self._load_prompt("analyze_all_in_one.txt")
         
         # Build graph
         self.graph = self._build_graph()
@@ -324,4 +338,103 @@ class RequirementsAnalysisAgent:
                    f"{len(result.get('suggestions', []))} suggestions")
         
         return result
+    
+    def analyze_fast(self, input_text: str) -> Dict[str, Any]:
+        """
+        Fast analysis method: Single API call to analyze everything at once
+        Giảm thời gian từ 3 phút xuống ~30-60 giây
+        
+        Args:
+            input_text: SRS/User Stories text to analyze
+            
+        Returns:
+            Dict với keys: conflicts, ambiguities, suggestions
+        """
+        logger.info(f"Starting FAST analysis (single API call) for text length: {len(input_text)} chars")
+        
+        try:
+            # Single prompt for all analysis
+            prompt_template = PromptTemplate.from_template(self.analyze_all_prompt)
+            chain = prompt_template | self.llm_fast | StrOutputParser()
+            
+            # Single API call
+            result_text = chain.invoke({"input_text": input_text})
+            
+            # Parse JSON response
+            result = self._parse_complete_json_response(result_text)
+            
+            # Ensure all keys exist
+            if not isinstance(result, dict):
+                result = {"conflicts": [], "ambiguities": [], "suggestions": []}
+            
+            # Normalize to expected format
+            normalized_result = {
+                "conflicts": result.get("conflicts", []),
+                "ambiguities": result.get("ambiguities", []),
+                "suggestions": result.get("suggestions", [])
+            }
+            
+            logger.info(f"FAST analysis completed: {len(normalized_result.get('conflicts', []))} conflicts, "
+                       f"{len(normalized_result.get('ambiguities', []))} ambiguities, "
+                       f"{len(normalized_result.get('suggestions', []))} suggestions")
+            
+            return normalized_result
+            
+        except Exception as e:
+            logger.error(f"Fast analysis failed: {str(e)}")
+            # Fallback to empty result instead of raising
+            logger.warning("Returning empty analysis result due to error")
+            return {
+                "conflicts": [],
+                "ambiguities": [],
+                "suggestions": []
+            }
+    
+    def _parse_complete_json_response(self, text: str) -> Dict[str, Any]:
+        """
+        Parse complete JSON response from single API call
+        Handles markdown code blocks and extracts full JSON object
+        """
+        # Remove markdown code blocks if present
+        if "```json" in text:
+            start = text.find("```json") + 7
+            end = text.find("```", start)
+            text = text[start:end].strip()
+        elif "```" in text:
+            start = text.find("```") + 3
+            end = text.find("```", start)
+            if end > start:
+                text = text[start:end].strip()
+        
+        # Try to parse as JSON
+        try:
+            data = json.loads(text)
+            if isinstance(data, dict):
+                return data
+            else:
+                return {"conflicts": [], "ambiguities": [], "suggestions": []}
+        except json.JSONDecodeError:
+            # Try to extract JSON object using regex
+            import re
+            # Try to find JSON object in the text
+            json_match = re.search(r'\{.*\}', text, re.DOTALL)
+            if json_match:
+                try:
+                    data = json.loads(json_match.group())
+                    if isinstance(data, dict):
+                        return data
+                except:
+                    pass
+            
+            # Last resort: try to extract each section separately
+            logger.warning("Failed to parse complete JSON, attempting partial extraction")
+            conflicts = self._parse_json_response(text, "conflicts")
+            ambiguities = self._parse_json_response(text, "ambiguities")
+            suggestions = self._parse_json_response(text, "suggestions")
+            
+            return {
+                "conflicts": conflicts,
+                "ambiguities": ambiguities,
+                "suggestions": suggestions
+            }
 

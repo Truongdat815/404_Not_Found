@@ -54,12 +54,13 @@ async def analyze_requirements(request: AnalyzeRequest):
         # Get agent instance
         agent = get_agent()
         
-        # Analyze using LangGraph agent
-        logger.info(f"Starting analysis with model: {request.model}")
+        # Analyze using FAST method (single API call) instead of full pipeline
+        # Giảm thời gian từ 3 phút xuống ~30-60 giây
+        logger.info(f"Starting FAST analysis with model: {request.model}")
         start_time = time.time()
-        result = agent.analyze(request.text)
+        result = agent.analyze_fast(request.text)  # Use fast method instead of full pipeline
         processing_time = int(time.time() - start_time)
-        logger.info(f"Analysis completed in {processing_time} seconds")
+        logger.info(f"FAST analysis completed in {processing_time} seconds")
         
         # Convert to response model
         conflicts = [ConflictItem(**item) for item in result.get("conflicts", [])]
@@ -156,12 +157,12 @@ async def analyze_requirements_from_file(
         # Get agent instance
         agent = get_agent()
         
-        # Analyze using LangGraph agent
-        logger.info(f"Starting file analysis: {file.filename} with model: {model}")
+        # Analyze using FAST method (single API call) for faster response
+        logger.info(f"Starting FAST file analysis: {file.filename} with model: {model}")
         start_time = time.time()
-        result = agent.analyze(text_content)
+        result = agent.analyze_fast(text_content)  # Use fast method instead of full pipeline
         processing_time = int(time.time() - start_time)
-        logger.info(f"File analysis completed in {processing_time} seconds")
+        logger.info(f"FAST file analysis completed in {processing_time} seconds")
         
         # Convert to response model
         conflicts = [ConflictItem(**item) for item in result.get("conflicts", [])]
