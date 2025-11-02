@@ -1,38 +1,49 @@
-#  404_Not_Found – AI Agent for SDLC Hackathon
+# Backend - AI Requirements Engineering API
 
-##  Team Members
+## Tech Stack
+- FastAPI
+- LangGraph
+- OpenAI GPT-4o / Claude 3 Sonnet
+- LlamaIndex
+- SQLite
 
-| No. | Student ID | Full Name | Role |
-|:---:|:-----------:|:----------------------------|:---------------------------|
-| 1 | SE192964 | Ngô Hoàng Trường Đạt |  Team Leader |
-| 2 | SE192637 | Phạm Vũ Hoài Phương Thảo |  Backend Developer |
-| 3 | SE194805 | Phạm Trần Đăng Phú |  Frontend Developer |
+## Setup
 
----
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-##  Team Overview
+## Run
 
-We are **404_Not_Found**, a passionate team of three FPT University students participating in the **AI Agent for SDLC Hackathon**, competing under **Track 1 – Topic 2: Requirements Engineering App**.
+```bash
+uvicorn main:app --reload
+```
 
-Our mission is to build an **AI-powered Requirements Engineering Assistant** that helps software teams refine and validate requirements efficiently.  
-Using advanced natural language understanding and reasoning, our app automatically analyzes **Software Requirement Specifications (SRS)** and **User Stories** to detect **conflicts, ambiguities**, and provide **improvement suggestions** — ensuring greater clarity, consistency, and alignment throughout the software development lifecycle.
+## API Endpoints
 
----
+- `POST /analyze` - Analyze SRS/User Stories
 
-##  Vision
+## Project Structure
 
-Empowering developers with smarter requirement validation through AI — reducing misunderstandings, improving collaboration, and accelerating high-quality software delivery.
-
----
-
-##  Tech Stack
-
-- **Core AI:** OpenAI, Claude, ChatGPT, Cursor
-- **Frontend:** React / Vite / TailwindCSS  
-- **Backend:** Node.js / FastAPI  
-- **Database:** SQL Server  
-
----
-
- *Built with passion and precision by 404_Not_Found – FPT University.*
+```
+backend/
+├── main.py                 # Entry point FastAPI
+├── requirements.txt        # Python dependencies
+├── app/
+│   ├── api/
+│   │   ├── router.py      # API endpoints
+│   │   └── schema.py      # Pydantic models
+│   ├── services/
+│   │   ├── analyzer.py    # AI analysis logic
+│   │   ├── parser.py      # Text parsing
+│   │   └── formatter.py   # Output formatting
+│   ├── agents/
+│   │   ├── langgraph_agent.py
+│   │   └── prompts/
+│   └── utils/
+└── tests/
+```
 
